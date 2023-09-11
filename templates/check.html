@@ -6,6 +6,10 @@
 </head>
 <body>
 <h1> hi {{ name }}</h1>
+{% for i in all %}
+<a href="/city/{{ i.temp }}"><p>you searched for {{ i.name }} and it was {{ i.desc}} and the temp was {{i.temp}}</p></a>
+<h4> you searched at {{i.time}}</h4> <a href="/delete/{{i.phone }}/{{ i.name }}">delet this search</a>
+{% endfor %}
 <form action="{{url_for('check')}}"method="post">
 
   <input type="text"name="city" required>

@@ -39,7 +39,7 @@ with app.app_context():
 
     class Cities(UserMixin, db.Model):
         id = db.Column(db.Integer, primary_key=True)
-        phone = db.Column(db.String(100), unique=True)
+        phone = db.Column(db.String(100))
         temp = db.Column(db.String(100))
         name = db.Column(db.String(1000))
         desc = db.Column(db.String(100))
@@ -117,8 +117,17 @@ def login():
 @app.route("/check",methods=["GET","POST"])
 def check():
     name=current_user.name
+    all_cities=Cities.query.all()
+    user_cities=[]
+    for i in all_cities:
+        if i.phone==current_user.phone:
+            user_cities.append(i)
     if request.method=="POST":
         city=request.form.get("city")
+        check=Cities.query.all()
+        for c in check:
+            if c.phone==current_user.phone and c.name ==city:
+                return f"you have searched for this before{ c.temp } and it was {c.desc}"
         API_KEY = "27bd1c926addeb97bac122010efa9bbc"
         Url = "https://api.openweathermap.org/data/2.5/weather"
 
@@ -133,9 +142,33 @@ def check():
         description = data["weather"][0]["description"]
         temp_kelvin = data["main"]["temp"]
         temp_in_celsius = int(temp_kelvin) - 273
-        return f"{temp_in_celsius}"
-
-    return render_template("check.html",name=name)
+        new=Cities(
+            phone=current_user.phone,
+            name=city,
+            desc=description,
+            temp=temp_in_celsius
+        )
+        db.session.add(new)
+        db.session.commit()
+        return redirect("/check")
+    return render_template("check.html",name=name,all=user_cities)
+@app.route("/city/<temp>")
+def city(temp):
+    sunny="https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80"
+    cold="https://plus.unsplash.com/premium_photo-1664301524345-90a694774519?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=869&q=80"
+    if int(temp)<20:
+        return render_template("image.html",image=cold)
+    else:
+        return render_template("image.html", image=sunny)
+@app.route("/delete/<user>/<city>")
+def delete(user,city):
+    all=Cities.query.all()
+    for i in all :
+        if i.phone==user and i.name==city:
+            db.session.delete(i)
+            db.session.commit()
+            return "deleted"
+    return "dont found "
 @app.route("/logout")
 def logout():
     logout_user()
